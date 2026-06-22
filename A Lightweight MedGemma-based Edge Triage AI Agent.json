@@ -1,0 +1,310 @@
+{
+  "name": "A Lightweight MedGemma-based Edge Triage AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "title": "Hi there! 👋"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -464,
+        -192
+      ],
+      "id": "c151d196-3846-4e6d-8bd4-52fdca59b2ef",
+      "name": "When chat message received",
+      "webhookId": "533e4405-d14d-4cfe-b2a4-852af019a187"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.final_prompt }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -192,
+        -400
+      ],
+      "id": "d0d0b2dc-3ede-4194-a18c-c8fbeb1b5c92",
+      "name": "Basic LLM Chain",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d506a8e8-82ad-434b-8c34-0c86e15f0f06",
+              "leftValue": "=={{ $json.body.image }}",
+              "rightValue": "webhook",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -48,
+        -176
+      ],
+      "id": "bd3f2f4d-f16b-4f48-8132-eb7109e0386a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        160,
+        -192
+      ],
+      "id": "b8059c54-639c-41a7-8e05-f5b32c3cf494",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "34d83fa3-52e0-417d-b76c-227944f38e54",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -464,
+        -400
+      ],
+      "id": "7e621878-13fb-4d69-bb8a-ce01d6fa5481",
+      "name": "Webhook",
+      "webhookId": "34d83fa3-52e0-417d-b76c-227944f38e54"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2c6f7dc9-d70c-4346-81b1-f8c59f57da18",
+              "name": "final_prompt",
+              "value": "={{ \n  $json.chatInput \n  || $json.body?.query \n  || $json.query \n  || $json.body?.message \n  || $json.body?.text \n  || '' \n}}",
+              "type": "string"
+            },
+            {
+              "id": "2676cbfa-4b72-40ab-8d3e-fecea8e713eb",
+              "name": "image",
+              "value": "={{ $json.body?.image || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "d460c056-77ec-4077-9778-394757ad97a9",
+              "name": "source",
+              "value": "={{ $json.body ? 'webhook' : 'chat' }}",
+              "type": "string"
+            },
+            {
+              "id": "c085d07e-142a-4afc-ba0d-c869339b8091",
+              "name": "start_time",
+              "value": "={{ $now }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        -400
+      ],
+      "id": "979ecd46-cc78-4c91-afdd-386b578ead31",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "model": "medgemma-edge:latest",
+        "options": {
+          "temperature": 0.6,
+          "topP": 0.9,
+          "numCtx": 1500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        -160
+      ],
+      "id": "4daeb809-668e-46eb-a9bc-ea87c84a4e23",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "jBoS8nmuZriubSx7",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e519674b-b050-40c9-af03-f175b3f1cb43",
+              "name": "text",
+              "value": "={{ $json.text || $json.output || $json.response || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        -400
+      ],
+      "id": "f050f95d-ebf1-41d3-a625-204d441cc95e",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==========================================\n// 1. 修正延遲計算 (Fix Latency Logic)\n// ==========================================\n// 關鍵修正：不能用 $input，因為 LLM 節點把 start_time 弄丟了。\n// 必須用 $('節點名稱') 直接回溯讀取 LLM 之前的資料。\n// 請確認你的畫布上，LLM 左邊那個節點名字真的叫 'Edit Fields'\nlet startTimeStr;\ntry {\n  startTimeStr = $('Edit Fields').first().json.start_time;\n} catch (e) {\n  startTimeStr = null; \n}\n\n// 如果抓不到開始時間，就用當下時間（避免代碼崩潰，雖然延遲會變 0）\nconst startTime = startTimeStr ? new Date(startTimeStr).getTime() : new Date().getTime();\nconst endTime = new Date().getTime();\nconst latency = endTime - startTime;\n\n// ==========================================\n// 2. 獲取 LLM 原始輸出\n// ==========================================\nconst raw_text = $input.first().json.text || \"\";\n\n// ==========================================\n// 3. 執行分流邏輯 (The Branching Magic)\n// ==========================================\n// 定義正則表達式：只抓取 { ... } 範圍內的 JSON\nconst regex = /\\{[\\s\\S]*\\}/;\nconst match = raw_text.match(regex);\n\nlet final_output = {};\n\nif (match) {\n  // --- 分支 A：Webhook 模式 (成功抓到 JSON) ---\n  try {\n    const parsed_json = JSON.parse(match[0]);\n    // 成功解析！展開所有欄位\n    final_output = {\n      ...parsed_json,\n      is_structured: true\n    };\n  } catch (error) {\n    // --- 分支 B：JSON 格式錯誤 (你要求的保留報錯部分) ---\n    final_output = { \n      error: \"JSON parse failed\", \n      raw_fragment: match[0].substring(0, 100),\n      is_structured: false\n    };\n  }\n} else {\n  // --- 分支 C：Chat 模式 (完全沒有 JSON) ---\n  // 這裡不應該報錯，因為這代表模型正在跟你聊天\n  // 我們把原始文字直接塞進 assessment_result，這樣 Chat 視窗就能顯示了\n  final_output = { \n    assessment_result: raw_text, // 讓聊天內容能被看到\n    warning: \"No JSON structure found (Chat Mode)\",\n    is_structured: false\n  };\n}\n\n// ==========================================\n// 4. 輸出最終結果\n// ==========================================\nreturn {\n  json: {\n    // 把上面的分析結果攤平放出來\n    ...final_output,\n    \n    // 加上技術指標 (Metadata)\n    _metadata: {\n      latency_ms: latency, // 這次這裡會有真實數字了\n      model: \"MedGemma-4B-Quantized\",\n      device: \"NVIDIA Jetson Orin Nano (8GB)\",\n      timestamp: new Date().toISOString()\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -400
+      ],
+      "id": "5c579a0c-a696-4b81-92c5-18f5e4b92b0c",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "1c6829c2-1dea-4165-8063-adc7ec47cdf7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d571f823f62d960da4fe4591c42a9c128dc6d53ec9d197ae023a92179309abdd"
+  },
+  "id": "U0dexKxEEPgVDVaQ",
+  "tags": []
+}
